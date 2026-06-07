@@ -1,36 +1,129 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AI Chat Agent — n8n + Groq + Google Sheets
 
-## Getting Started
+Interface de chat com agente de IA integrado, construído com Next.js no frontend e n8n como orquestrador do backend. O agente responde com contexto, salva conversas no Google Sheets e tem acesso a ferramentas como calculadora e Wikipedia.
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Demo
+
+> Chat funcional rodando em localhost:3000, integrado ao agente n8n em tempo real.
+
+---
+
+## Arquitetura
+Usuário (Next.js) → API Route → Webhook n8n → AI Agent (Groq) → Resposta
+↓
+Google Sheets (log)
+
+**Fluxo completo:**
+1. Usuário envia mensagem no chat (Next.js)
+2. API Route (`/api/chat`) repassa para o webhook do n8n via HTTP POST
+3. n8n processa com o AI Agent (Groq + LLaMA)
+4. Conversa é salva automaticamente no Google Sheets
+5. Resposta volta ao frontend com contexto da sessão
+
+---
+
+## Fluxo n8n
+
+![Fluxo do workflow n8n](public/fluxo-n8n.png)
+
+### Nós configurados
+
+| Nó | Função |
+|---|---|
+| **When chat message received** | Trigger — recebe a mensagem via webhook |
+| **Edit Fields** | Extrai e renomeia os campos `sessionId` e `chatInput` |
+| **Append row in sheet** | Salva cada mensagem no Google Sheets para histórico |
+| **AI Agent** | Orquestra o processamento com o LLM |
+| **Groq Chat Model** | Gera a resposta usando LLaMA via Groq |
+| **Simple Memory** | Mantém contexto da conversa entre mensagens |
+| **Calculator** | Ferramenta: resolve operações matemáticas |
+| **Wikipedia** | Ferramenta: busca informações em tempo real |
+| **No Operation** | Encerra o fluxo após resposta |
+
+### Destaques técnicos
+
+- **Memória de sessão** — o agente lembra o contexto de toda a conversa usando o nó Simple Memory vinculado ao `sessionId`
+- **AI Agent com tools** — diferente de um fluxo linear, o agente decide autonomamente quando usar a calculadora ou buscar na Wikipedia
+- **Log automático** — cada mensagem é registrada no Google Sheets com timestamp para análise posterior
+
+---
+
+## Frontend — Next.js
+
+Interface mobile-first simulando um app de chat, integrada ao agente n8n em tempo real.
+
+### Tecnologias
+
+- **Next.js 15** — framework React com App Router
+- **TypeScript** — tipagem estática
+- **API Route** (`/api/chat`) — proxy entre o frontend e o webhook n8n
+- **CSS Variables** — design system consistente
+
+### Como funciona a integração
+
+```ts
+// app/api/chat/route.ts
+const response = await fetch(N8N_WEBHOOK_URL, {
+  method: "POST",
+  body: JSON.stringify({
+    action: "sendMessage",
+    sessionId: sessionId,  // mantém contexto por sessão
+    chatInput: message,
+  }),
+});
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Como rodar localmente
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+# Clone o repositório
+git clone https://github.com/carlosqbarbosa/autoflow-chatbot.git
+cd autoflow-chatbot
 
-## Learn More
+# Instale as dependências
+npm install
 
-To learn more about Next.js, take a look at the following resources:
+# Rode o projeto
+npm run dev
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Acesse: [http://localhost:3000](http://localhost:3000)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+> **Requisito:** o fluxo n8n precisa estar publicado (botão "Publish" no n8n) para o chat funcionar.
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Stack completa
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Camada | Tecnologia |
+|---|---|
+| Frontend | Next.js 15 + TypeScript |
+| Orquestração | n8n |
+| LLM | Groq (LLaMA 3) |
+| Memória | n8n Simple Memory |
+| Log de conversas | Google Sheets |
+| Ferramentas do agente | Calculator + Wikipedia |
+| Deploy frontend | Vercel |
+
+---
+
+## Estrutura do projeto
+autoflow-chatbot/
+├── app/
+│   ├── api/
+│   │   └── chat/
+│   │       └── route.ts      ← proxy para o webhook n8n
+│   ├── components/
+│   │   └── Chatbot.tsx       ← interface do chat
+│   ├── globals.css
+│   ├── layout.tsx
+│   └── page.tsx
+├── public/
+│   └── fluxo-n8n.png         ← print do workflow n8n
+└── README.md
+
+---
