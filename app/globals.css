@@ -1,0 +1,21 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Syne:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+:root {
+  --bg: #0A0A0A;
+  --surface: #141414;
+  --surface2: #1C1C1C;
+  --green: #00E676;
+  --green-dim: #00C853;
+  --text: #F5F5F5;
+  --text-dim: #888;
+  --border: #222;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  font-family: 'Syne', sans-serif;
+  color: var(--text);
+}
